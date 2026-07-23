@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados de Exámenes - {{ patient.nombre }} {{ patient.apellido }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .report-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 50px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-logo img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3b82f6;
+        }
+        
+        .header-title h1 {
+            margin: 0;
+            color: #1e3a8a;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+        
+        .header-title p {
+            margin: 5px 0 0 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        
+        .patient-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+        
+        .patient-card p {
+            margin: 6px 0;
+            font-size: 0.95rem;
+            color: #334155;
+        }
+        
+        .patient-card strong {
+            color: #475569;
+        }
+        
+        .results-section h2 {
+            font-size: 1.4rem;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 2px solid #cbd5e1;
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+        }
+        
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 30px;
+        }
+        
+        .footer p {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        
+        .btn-print {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .btn-print:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(59, 130, 246, 0.3);
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .report-container {
+                box-shadow: none;
+                padding: 0;
+                border-radius: 0;
+            }
+            .btn-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-logo">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Laboratorio">
+                <div class="header-title">
+                    <h1>Laboratorio Médico</h1>
+                    <p>Reporte de Resultados de Exámenes</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Patient Info -->
+        <div class="patient-card">
+            <div>
+                <p><strong>Paciente:</strong> {{ patient.nombre }} {{ patient.apellido }}</p>
+                <p><strong>Cédula:</strong> {{ patient.cedula if patient.cedula else 'N/A' }}</p>
+                <p><strong>Edad:</strong> {{ patient.edad if patient.edad else 'N/A' }} años</p>
+                <p><strong>Altura:</strong> {{ patient.altura if patient.altura else 'N/A' }} m</p>
+            </div>
+            <div>
+                <p><strong>Sexo:</strong> {{ patient.sexo }}</p>
+                <p><strong>Teléfono:</strong> {{ patient.telefono if patient.telefono else 'N/A' }}</p>
+                <p><strong>Fecha de Nacimiento:</strong> {{ patient.nacimiento if patient.nacimiento else 'N/A' }}</p>
+                <p><strong>Peso:</strong> {{ patient.peso if patient.peso else 'N/A' }} kg</p>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="results-section">
+            <h2>Resultados Analíticos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Examen</th>
+                        <th>Resultado</th>
+                        <th>Ref. Hombres</th>
+                        <th>Ref. Mujeres</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if results %}
+                        {% for r in results %}
+                        <tr>
+                            <td>{{ r.name }}</td>
+                            <td><strong>{{ r.value }}</strong></td>
+                            <td style="color: #64748b;">{{ r.ref_m }}</td>
+                            <td style="color: #64748b;">{{ r.ref_f }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #9ca3af; padding: 30px;">
+                                No hay resultados registrados para este paciente.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generado automáticamente por Modern LabApp</p>
+            <button onclick="window.print()" class="btn-print">Imprimir Reporte</button>
+        </div>
+    </div>
+</body>
+</html>

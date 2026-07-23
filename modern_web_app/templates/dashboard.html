@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Lab App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo Laboratorio">
+                <h2>Laboratorio Médico</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-btn active" id="navPacientes" onclick="showTab('pacientes')">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Pacientes</span>
+                </a>
+                <a href="#" class="nav-btn" id="navStats" onclick="showTab('stats')">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Estadísticas</span>
+                </a>
+                <button class="nav-btn btn-action" onclick="openPatientModal()">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Nuevo Paciente</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">M</div>
+                    <div class="user-info">
+                        <strong>{{ session['username'] }}</strong>
+                        <span>Administrador</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="nav-btn" style="color: var(--accent-red);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Cerrar Sesión</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Directorio de Pacientes</h1>
+                </div>
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); margin-right: 0.8rem;"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar paciente..." onkeyup="filterPatients()">
+                </div>
+            </header>
+
+            <!-- Patients Section -->
+            <section id="patientsSection" class="glass-card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Apellido</th>
+                                <th>Cédula</th>
+                                <th>Edad</th>
+                                <th>Dirección</th>
+                                <th>Teléfono</th>
+                                <th>Sexo</th>
+                                <th>Nacimiento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientTableBody">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="action-controls">
+                    <button class="btn-secondary btn-blue" onclick="editSelectedPatient()">
+                        <i class="fa-solid fa-user-pen"></i> Editar Paciente
+                    </button>
+                    <button class="btn-secondary btn-yellow" onclick="loadExamsForSelected()">
+                        <i class="fa-solid fa-file-medical"></i> Cargar Exámenes
+                    </button>
+                    <button class="btn-secondary btn-purple" onclick="printExamsForSelected()">
+                        <i class="fa-solid fa-print"></i> Imprimir Reporte
+                    </button>
+                    <button class="btn-secondary btn-red" onclick="deleteSelectedPatient()" style="margin-left: auto;">
+                        <i class="fa-solid fa-trash"></i> Eliminar Paciente
+                    </button>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section id="statsSection" style="display: none;">
+                <!-- KPI Cards -->
+                <div class="kpi-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                        <h3 style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">PACIENTES REGISTRADOS</h3>
+                        <p id="kpiTotalPatients" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-blue);">0</p>
+                    </div>
+                    <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                        <h3 style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">EDAD PROMEDIO</h3>
+                        <p id="kpiAvgAge" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-green);">0 años</p>
+                    </div>
+                    <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                        <h3 style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">ALTURA PROMEDIO</h3>
+                        <p id="kpiAvgHeight" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-yellow);">0 m</p>
+                    </div>
+                    <div class="glass-card" style="padding: 1.5rem; text-align: center;">
+                        <h3 style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">PESO PROMEDIO</h3>
+                        <p id="kpiAvgWeight" style="font-size: 2.2rem; font-weight: 800; color: var(--accent-purple);">0 kg</p>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div class="glass-card" style="padding: 2rem; height: 350px; display: flex; flex-direction: column; align-items: center;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; align-self: flex-start;">Distribución por Sexo</h3>
+                        <div style="width: 100%; height: 250px; display: flex; justify-content: center;">
+                            <canvas id="sexChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="padding: 2rem; height: 350px;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">Distribución por Edades</h3>
+                        <div style="width: 100%; height: 250px;">
+                            <canvas id="ageChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card" style="grid-column: span 2; padding: 2rem; height: 400px;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">Promedios y Alertas Clínicas (Fuera de Rango)</h3>
+                        <div style="width: 100%; height: 300px;">
+                            <canvas id="examsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Patient Modal -->
+    <div id="patientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="patientModalTitle">Nuevo Paciente</h2>
+                <button class="modal-close" onclick="closePatientModal()">&times;</button>
+            </div>
+            <form id="patientForm" onsubmit="savePatient(event)">
+                <input type="hidden" id="patientId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" id="nombre" class="form-input" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="apellido">Apellido</label>
+                        <input type="text" id="apellido" class="form-input" required autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cedula">Cédula</label>
+                        <input type="number" id="cedula" class="form-input" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="nacimiento">Fecha de Nacimiento</label>
+                        <input type="text" id="nacimiento" class="form-input" placeholder="DD-MM-AAAA" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edad">Edad</label>
+                        <input type="number" id="edad" class="form-input" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexo">Sexo</label>
+                        <select id="sexo" class="form-input" style="background-color: var(--bg-primary);">
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="peso">Peso (kg)</label>
+                        <input type="number" step="0.1" id="peso" class="form-input" placeholder="Ej: 70.5" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="altura">Altura (m)</label>
+                        <input type="number" step="0.01" id="altura" class="form-input" placeholder="Ej: 1.75" autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="telefono">Teléfono</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <select id="telefonoPrefix" class="form-input" style="width: 100px; background-color: var(--bg-primary);">
+                                <option value="0416">0416</option>
+                                <option value="0426">0426</option>
+                                <option value="0414">0414</option>
+                                <option value="0424">0424</option>
+                                <option value="0412">0412</option>
+                                <option value="0422">0422</option>
+                            </select>
+                            <input type="number" id="telefonoNumber" class="form-input" style="flex-grow: 1;" placeholder="1234567" required autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="direccion">Dirección</label>
+                        <input type="text" id="direccion" class="form-input" autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closePatientModal()">Cancelar</button>
+                    <button type="submit" class="btn-submit" style="width: auto; padding: 0.7rem 2rem;">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Exam Modal -->
+    <div id="examModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2 id="examModalTitle">Cargar Exámenes</h2>
+                <button class="modal-close" onclick="closeExamModal()">&times;</button>
+            </div>
+            <form id="examForm" onsubmit="saveExams(event)">
+                <input type="hidden" id="examPatientId">
+                <div class="exam-scroll-area">
+                    <div class="exam-grid">
+                        <div class="form-group">
+                            <label for="globulosBlancos">Glóbulos Blancos (x10³/µL)</label>
+                            <input type="text" id="globulosBlancos" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Plaquetas">Plaquetas (x10³/µL)</label>
+                            <input type="text" id="Plaquetas" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Colesterol">Colesterol (mg/dL)</label>
+                            <input type="text" id="Colesterol" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="HDL">HDL (mg/dL)</label>
+                            <input type="text" id="HDL" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="LDL">LDL (mg/dL)</label>
+                            <input type="text" id="LDL" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Trigliceridos">Triglicéridos (mg/dL)</label>
+                            <input type="text" id="Trigliceridos" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Glucosa">Glucosa (mg/dL)</label>
+                            <input type="text" id="Glucosa" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Urea">Urea (mg/dL)</label>
+                            <input type="text" id="Urea" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Creatinina">Creatinina (mg/dL)</label>
+                            <input type="text" id="Creatinina" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="acidoUrico">Ácido Úrico (mg/dL)</label>
+                            <input type="text" id="acidoUrico" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="proteinasTotales">Proteínas Totales (g/dL)</label>
+                            <input type="text" id="proteinasTotales" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="Albumina">Albúmina (g/dL)</label>
+                            <input type="text" id="Albumina" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="ALT">ALT (U/L)</label>
+                            <input type="text" id="ALT" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="AST">AST (U/L)</label>
+                            <input type="text" id="AST" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="fosfatasaAlcalina">Fosfatasa Alcalina (U/L)</label>
+                            <input type="text" id="fosfatasaAlcalina" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="GGT">GGT (U/L)</label>
+                            <input type="text" id="GGT" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="bilirrubinaTotal">Bilirrubina Total (mg/dL)</label>
+                            <input type="text" id="bilirrubinaTotal" class="form-input" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="globulosRojos">Glóbulos Rojos (x10⁶/µL)</label>
+                            <input type="text" id="globulosRojos" class="form-input" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeExamModal()">Cancelar</button>
+                    <button type="submit" class="btn-submit" style="width: auto; padding: 0.7rem 2rem;">Guardar Resultados</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
